@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #0a0a15;
+  color: #e0e0ee;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e1e3a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2e2e4a;
+}
+
+/* Email body styles */
+.email-body {
+  line-height: 1.6;
+}
+
+.email-body a {
+  color: #6366f1;
+  text-decoration: underline;
+}
+
+.email-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.email-body blockquote {
+  border-left: 3px solid #1e1e3a;
+  padding-left: 12px;
+  margin: 8px 0;
+  color: #666688;
+}
+
+.email-body pre {
+  background: #0f0f1a;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 13px;
+}
+
+.email-body table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.email-body td, .email-body th {
+  border: 1px solid #1e1e3a;
+  padding: 6px 10px;
+}
+
+/* ContentEditable placeholder */
+[contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: #333355;
+  pointer-events: none;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 150ms ease-out;
+}
