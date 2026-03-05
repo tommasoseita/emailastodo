@@ -5,42 +5,54 @@ import { SplitCategory } from '@/types/email';
 
 const tabs: { id: SplitCategory; label: string }[] = [
   { id: 'important', label: 'Important' },
-  { id: 'notifications', label: 'Notifications' },
-  { id: 'newsletters', label: 'Newsletters' },
   { id: 'other', label: 'Other' },
 ];
 
 export default function SplitInboxTabs() {
   const { currentSplitCategory, setCurrentSplitCategory, classifiedEmails, currentFolder } = useEmailStore();
 
-  if (currentFolder !== 'inbox') return null;
+  if (currentFolder !== 'inbox') {
+    const folderLabels: Record<string, string> = {
+      starred: 'Starred',
+      snoozed: 'Snoozed',
+      sent: 'Sent',
+      drafts: 'Drafts',
+      trash: 'Trash',
+      all: 'All Mail',
+    };
+    return (
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-[#1e1e3a]">
+        <h2 className="text-base font-semibold text-white">{folderLabels[currentFolder] || 'Mail'}</h2>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex border-b border-[#1e1e3a]">
-      {tabs.map((tab) => {
-        const count = classifiedEmails[tab.id]?.length || 0;
-        const isActive = currentSplitCategory === tab.id;
+    <div className="flex items-center gap-1 px-5 py-3 border-b border-[#1e1e3a]">
+      {tabs.map((tab, i) => {
+        const count = tab.id === 'other'
+          ? (classifiedEmails.notifications?.length || 0) + (classifiedEmails.newsletters?.length || 0) + (classifiedEmails.other?.length || 0)
+          : classifiedEmails[tab.id]?.length || 0;
+        const isActive = (tab.id === 'important' && currentSplitCategory === 'important')
+          || (tab.id === 'other' && currentSplitCategory !== 'important');
 
         return (
-          <button
-            key={tab.id}
-            onClick={() => setCurrentSplitCategory(tab.id)}
-            className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors relative ${
-              isActive
-                ? 'text-white'
-                : 'text-[#666688] hover:text-[#9999bb]'
-            }`}
-          >
-            {tab.label}
+          <div key={tab.id} className="flex items-center">
+            {i > 0 && <span className="text-[#333355] mx-2">•</span>}
+            <button
+              onClick={() => setCurrentSplitCategory(tab.id)}
+              className={`text-base font-semibold transition-colors ${
+                isActive ? 'text-white' : 'text-[#555577] hover:text-[#8888aa]'
+              }`}
+            >
+              {tab.label}
+            </button>
             {count > 0 && (
-              <span className={`ml-1.5 text-[10px] ${isActive ? 'text-[#8888ff]' : 'text-[#444466]'}`}>
+              <span className={`ml-1.5 text-sm ${isActive ? 'text-[#8888aa]' : 'text-[#444466]'}`}>
                 {count}
               </span>
             )}
-            {isActive && (
-              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#6366f1]" />
-            )}
-          </button>
+          </div>
         );
       })}
     </div>

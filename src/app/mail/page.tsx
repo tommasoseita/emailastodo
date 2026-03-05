@@ -6,17 +6,17 @@ import SearchBar from '@/components/SearchBar';
 import { useEmailStore } from '@/store/emailStore';
 
 export default function MailPage() {
-  const { isSearching } = useEmailStore();
+  const { isSearching, selectedEmailId } = useEmailStore();
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      <div className="flex flex-col">
+      <div className={`flex flex-col ${selectedEmailId ? 'w-[45%] min-w-[400px]' : 'flex-1'} transition-all duration-150`}>
         {isSearching && <SearchBar />}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden flex">
           <EmailList />
         </div>
       </div>
-      <EmailView />
+      {selectedEmailId && <EmailView />}
     </div>
   );
 }

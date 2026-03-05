@@ -56,7 +56,7 @@ interface EmailStore {
   getCurrentEmails: () => Email[];
 }
 
-const SPLIT_CATEGORIES: SplitCategory[] = ['important', 'notifications', 'newsletters', 'other'];
+const SPLIT_CATEGORIES: SplitCategory[] = ['important', 'other'];
 
 export const useEmailStore = create<EmailStore>((set, get) => ({
   emails: [],
@@ -168,7 +168,15 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
   getCurrentEmails: () => {
     const { currentFolder, currentSplitCategory, classifiedEmails, emails } = get();
     if (currentFolder === 'inbox') {
-      return classifiedEmails[currentSplitCategory] || [];
+      if (currentSplitCategory === 'important') {
+        return classifiedEmails.important || [];
+      }
+      // "other" combines notifications, newsletters, and other
+      return [
+        ...(classifiedEmails.notifications || []),
+        ...(classifiedEmails.newsletters || []),
+        ...(classifiedEmails.other || []),
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
     const labelMap: Record<string, string> = {
       starred: 'STARRED',

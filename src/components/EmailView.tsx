@@ -6,6 +6,36 @@ import { useEmails } from '@/hooks/useEmails';
 import { Email } from '@/types/email';
 import DOMPurify from 'dompurify';
 
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+function getAvatarColor(name: string): string {
+  const colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#3b82f6', '#14b8a6', '#f97316'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function formatFullDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (diffDays === 0) return time;
+  if (diffDays === 1) return `Yesterday ${time}`;
+  if (diffDays < 7) return `${date.toLocaleDateString([], { weekday: 'short' })} ${time}`;
+  return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
+}
+
 export default function EmailView() {
   const { selectedEmailId } = useEmailStore();
   const { archiveEmail, starEmail, trashEmail, markAsRead } = useEmails();
@@ -28,11 +58,12 @@ export default function EmailView() {
           const data = await res.json();
           const messages = data.messages || [data];
           setThread(messages);
-          // Expand last message by default
-          if (messages.length > 0) {
+          // Expand all messages for short threads, last message for long threads
+          if (messages.length <= 3) {
+            setExpandedMessages(new Set(messages.map((m: Email) => m.id)));
+          } else {
             setExpandedMessages(new Set([messages[messages.length - 1].id]));
           }
-          // Mark as read
           markAsRead(selectedEmailId!);
         }
       } catch (error) {
@@ -49,7 +80,6 @@ export default function EmailView() {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#0a0a15]">
         <div className="text-center">
-          <div className="text-[#333355] text-4xl mb-3">📬</div>
           <div className="text-sm text-[#444466]">Select an email to read</div>
           <div className="text-xs text-[#333355] mt-1">Use J/K to navigate, Enter to open</div>
         </div>
@@ -77,28 +107,17 @@ export default function EmailView() {
     });
   }
 
-  function formatFullDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleString(undefined, {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
   return (
     <div ref={viewRef} className="flex-1 bg-[#0a0a15] overflow-y-auto">
-      {/* Email Header */}
-      <div className="sticky top-0 bg-[#0a0a15]/95 backdrop-blur-sm border-b border-[#1e1e3a] px-6 py-4 z-10">
+      {/* Subject header */}
+      <div className="sticky top-0 bg-[#0a0a15]/95 backdrop-blur-sm border-b border-[#1e1e3a] px-6 py-3 z-10">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-white truncate pr-4">{lastMessage.subject}</h1>
-          <div className="flex items-center gap-1">
+          <h1 className="text-base font-semibold text-white truncate pr-4">{lastMessage.subject}</h1>
+          <div className="flex items-center gap-0.5">
             <button
               onClick={() => archiveEmail(lastMessage)}
               className="p-2 text-[#666688] hover:text-white hover:bg-[#1a1a35] rounded transition-colors"
-              title="Archive (E)"
+              title="Done (E)"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="20 6 9 17 4 12" />
@@ -109,7 +128,9 @@ export default function EmailView() {
               className={`p-2 rounded transition-colors ${lastMessage.isStarred ? 'text-yellow-500' : 'text-[#666688] hover:text-white'} hover:bg-[#1a1a35]`}
               title="Star (S)"
             >
-              ★
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={lastMessage.isStarred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
             </button>
             <button
               onClick={() => trashEmail(lastMessage)}
@@ -126,34 +147,27 @@ export default function EmailView() {
       </div>
 
       {/* Thread Messages */}
-      <div className="px-6 py-4 space-y-4">
-        {thread.map((msg) => {
+      <div className="px-6 py-4 space-y-3">
+        {thread.map((msg, idx) => {
           const isExpanded = expandedMessages.has(msg.id);
 
           return (
-            <div key={msg.id} className="border border-[#1e1e3a] rounded-lg overflow-hidden">
+            <div key={msg.id}>
               {/* Message Header */}
               <button
                 onClick={() => toggleExpanded(msg.id)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#12122a] transition-colors text-left"
+                className="w-full flex items-center gap-3 py-2 text-left"
               >
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white"
-                  style={{
-                    backgroundColor: (() => {
-                      const colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#3b82f6'];
-                      let hash = 0;
-                      for (let i = 0; i < msg.from.length; i++) hash = msg.from.charCodeAt(i) + ((hash << 5) - hash);
-                      return colors[Math.abs(hash) % colors.length];
-                    })(),
-                  }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0"
+                  style={{ backgroundColor: getAvatarColor(msg.from) }}
                 >
-                  {msg.from.split(' ').map((n) => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
+                  {getInitials(msg.from)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-white truncate">{msg.from}</span>
-                    <span className="text-[11px] text-[#555577]">{formatFullDate(msg.date)}</span>
+                    <span className="text-sm font-medium text-white">{msg.from}</span>
+                    <span className="text-xs text-[#555577]">{formatFullDate(msg.date)}</span>
                   </div>
                   {!isExpanded && (
                     <div className="text-xs text-[#444466] truncate">{msg.snippet}</div>
@@ -163,7 +177,7 @@ export default function EmailView() {
 
               {/* Message Body */}
               {isExpanded && (
-                <div className="px-4 pb-4">
+                <div className="pl-11 pb-4">
                   <div className="text-xs text-[#555577] mb-3">
                     To: {msg.to}
                   </div>
@@ -182,12 +196,19 @@ export default function EmailView() {
                         }),
                       }}
                     />
-                  ) : (
+                  ) : msg.body ? (
                     <div className="text-sm text-[#ccccee] leading-relaxed whitespace-pre-wrap">
                       {msg.body}
                     </div>
+                  ) : (
+                    <div className="text-sm text-[#444466] italic">No content</div>
                   )}
                 </div>
+              )}
+
+              {/* Divider */}
+              {idx < thread.length - 1 && (
+                <div className="border-b border-[#1a1a30] ml-11" />
               )}
             </div>
           );

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEmailStore } from '@/store/emailStore';
-import EmailRow from './EmailRow';
+import { useEmails } from '@/hooks/useEmails';
+import EmailRow, { getDateGroup } from './EmailRow';
 import SplitInboxTabs from './SplitInboxTabs';
 
 export default function EmailList() {
@@ -13,27 +14,16 @@ export default function EmailList() {
     getCurrentEmails,
     currentFolder,
   } = useEmailStore();
+  const { archiveEmail, starEmail, snoozeEmail } = useEmails();
 
   const emails = getCurrentEmails();
 
-  const folderLabels: Record<string, string> = {
-    inbox: 'Inbox',
-    starred: 'Starred',
-    snoozed: 'Snoozed',
-    sent: 'Sent',
-    drafts: 'Drafts',
-    trash: 'Trash',
-    all: 'All Mail',
-  };
+  // Group emails by date
+  let lastDateGroup = '';
 
   return (
-    <div className="w-[380px] min-w-[380px] bg-[#0d0d1a] border-r border-[#1e1e3a] flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[#1e1e3a]">
-        <h2 className="text-sm font-semibold text-white">{folderLabels[currentFolder] || 'Inbox'}</h2>
-      </div>
-
-      {/* Split Inbox Tabs */}
+    <div className="flex-1 min-w-[400px] bg-[#0d0d1a] border-r border-[#1e1e3a] flex flex-col">
+      {/* Header with tabs */}
       <SplitInboxTabs />
 
       {/* Email List */}
@@ -49,17 +39,35 @@ export default function EmailList() {
             <div className="text-xs text-[#333355]">No emails in this view</div>
           </div>
         ) : (
-          emails.map((email, index) => (
-            <EmailRow
-              key={email.id}
-              email={email}
-              isSelected={email.id === selectedEmailId}
-              onClick={() => {
-                setSelectedEmailId(email.id);
-                setSelectedIndex(index);
-              }}
-            />
-          ))
+          emails.map((email, index) => {
+            const dateGroup = getDateGroup(email.date);
+            const showDateSeparator = dateGroup !== lastDateGroup && dateGroup !== 'Today';
+            lastDateGroup = dateGroup;
+
+            return (
+              <div key={email.id}>
+                {showDateSeparator && (
+                  <div className="px-4 py-2 text-xs text-[#555577] font-medium border-t border-[#1a1a30] mt-1">
+                    {dateGroup}
+                  </div>
+                )}
+                <EmailRow
+                  email={email}
+                  isSelected={email.id === selectedEmailId}
+                  onClick={() => {
+                    setSelectedEmailId(email.id);
+                    setSelectedIndex(index);
+                  }}
+                  onArchive={archiveEmail}
+                  onSnooze={(e) => {
+                    setSelectedEmailId(e.id);
+                    useEmailStore.getState().setSnoozeOpen(true);
+                  }}
+                  onStar={starEmail}
+                />
+              </div>
+            );
+          })
         )}
       </div>
     </div>

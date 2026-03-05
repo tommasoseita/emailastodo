@@ -65,7 +65,21 @@ export function useKeyboardShortcuts() {
 
         case 'e':
           e.preventDefault();
-          if (selectedEmail) archiveEmail(selectedEmail);
+          if (selectedEmail) {
+            // Archive and auto-advance to next email (todo-list style)
+            const currentIndex = store.selectedIndex;
+            archiveEmail(selectedEmail);
+            // After removing, select the email at the same index (which is now the next one)
+            setTimeout(() => {
+              const remaining = store.getCurrentEmails();
+              if (remaining.length > 0) {
+                const nextIndex = Math.min(currentIndex, remaining.length - 1);
+                store.setSelectedIndex(nextIndex);
+              } else {
+                store.setSelectedEmailId(null);
+              }
+            }, 50);
+          }
           break;
 
         case 's':
@@ -91,7 +105,19 @@ export function useKeyboardShortcuts() {
 
         case '#':
           e.preventDefault();
-          if (selectedEmail) trashEmail(selectedEmail);
+          if (selectedEmail) {
+            const currentIndex = store.selectedIndex;
+            trashEmail(selectedEmail);
+            setTimeout(() => {
+              const remaining = store.getCurrentEmails();
+              if (remaining.length > 0) {
+                const nextIndex = Math.min(currentIndex, remaining.length - 1);
+                store.setSelectedIndex(nextIndex);
+              } else {
+                store.setSelectedEmailId(null);
+              }
+            }, 50);
+          }
           break;
 
         case '/':
