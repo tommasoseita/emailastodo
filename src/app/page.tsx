@@ -1,12 +1,14 @@
 'use client';
 
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, Suspense } from 'react';
 
-export default function Home() {
+function HomeContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
 
   useEffect(() => {
     if (session) {
@@ -25,6 +27,17 @@ export default function Home() {
   return (
     <div className="h-screen flex items-center justify-center bg-[#0a0a15]">
       <div className="text-center space-y-8 animate-fadeIn">
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-red-900/30 border border-red-800/50 rounded-lg p-4 max-w-md mx-auto">
+            <p className="text-red-300 text-sm font-medium">Sign-in failed</p>
+            <p className="text-red-400/70 text-xs mt-1">Error: {error}</p>
+            <p className="text-red-400/50 text-xs mt-2">
+              Check Vercel function logs for details, or visit /api/auth/debug
+            </p>
+          </div>
+        )}
+
         {/* Logo */}
         <div className="space-y-2">
           <h1 className="text-4xl font-bold text-white tracking-tight">Supermail</h1>
@@ -60,5 +73,17 @@ export default function Home() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center bg-[#0a0a15]">
+        <div className="text-[#555577] text-sm">Loading...</div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
